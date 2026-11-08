@@ -21,6 +21,12 @@ body { margin:0; }
 document.addEventListener('DOMContentLoaded', () => {
   const app = window.Telegram?.WebApp;
   if (!app?.initData) return;
+  if (typeof app.openTelegramLink === 'function') {
+    document.querySelector('[data-project-credit]').addEventListener('click', (event) => {
+      event.preventDefault();
+      app.openTelegramLink(event.currentTarget.href);
+    });
+  }
   if (app.isVersionAtLeast?.('7.7')) app.disableVerticalSwipes();
   app.expand();
   app.ready();
@@ -310,6 +316,11 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
     #tykh-gym .admin .go { width:auto; justify-self:start; }
     #tykh-gym .danger { color:var(--alert); }
     #tykh-gym .hall-desc { white-space:pre-line; overflow-wrap:anywhere; }
+    #tykh-gym .project-credit {
+      display:flex; align-items:center; justify-content:center; gap:5px; margin-top:8px; color:var(--muted); font-size:12px;
+    }
+    #tykh-gym .project-credit a { display:inline-flex; align-items:center; min-height:44px; color:var(--green); text-underline-offset:3px; }
+    #tykh-gym .project-credit a:focus-visible { outline:2px solid var(--focus); outline-offset:3px; border-radius:4px; }
     @media (max-width:475px) {
       #tykh-gym .date-info,#tykh-gym .hall-admin-row { grid-template-columns:1fr; }
       #tykh-gym .admin-nav { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); }
@@ -390,6 +401,11 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
       <div class="stack" data-admin-view></div>
     </div>
   </section>
+
+  <footer class="project-credit" lang="en">
+    <span>Project by</span>
+    <a href="https://t.me/jst118" target="_blank" rel="noopener noreferrer" data-project-credit>t.me/jst118</a>
+  </footer>
 
   <script>
 (() => {
