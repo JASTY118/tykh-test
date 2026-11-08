@@ -162,7 +162,9 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
     #tykh-gym .chrome > div { min-width:0; }
     #tykh-gym .chrome .theme-toggle { margin-inline-start:auto; flex:none; width:44px; min-height:44px; padding:0; }
     #tykh-gym .chrome small { display:block; color:var(--muted); }
-    #tykh-gym .mark { display:grid; place-items:center; width:38px; height:38px; border-radius:10px; flex:none; color:var(--on-primary); background:var(--primary); }
+    #tykh-gym .brand { display:flex; flex:1; align-items:center; gap:9px; }
+    #tykh-gym .brand-logo { display:block; width:86px; height:43px; flex:none; }
+    #tykh-gym .brand small { line-height:1.2; }
     #tykh-gym .chat { background:var(--chat); }
     #tykh-gym .messages { padding:17px 13px; display:grid; gap:10px; min-height:320px; align-content:start; }
     #tykh-gym .bubble { background:var(--surface); padding:12px; border-radius:13px 13px 13px 4px; max-width:100%; overflow-wrap:anywhere; }
@@ -249,7 +251,6 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
     #tykh-gym .admin-nav .pill { min-height:37px; font-size:12px; }
     #tykh-gym .icon-label, #tykh-gym .icon-button { display:inline-flex; align-items:center; gap:6px; }
     #tykh-gym .icon-button { justify-content:center; min-width:42px; }
-    #tykh-gym .mark svg { width:20px; height:20px; }
     #tykh-gym .bar button { gap:3px; }
     #tykh-gym .icon-label svg,#tykh-gym .icon-button svg { flex:none; }
     #tykh-gym .gallery-photo { aspect-ratio:3/2; object-fit:contain; background:var(--surface); }
@@ -358,10 +359,10 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
   <div class="product" data-client>
     <section class="surface chat" aria-label="Чат бота в Telegram">
       <header class="chrome">
-        <span class="mark" aria-hidden="true"><i data-lucide="dumbbell"></i></span><div><b>ТЫХ</b><small>бот · Telegram</small></div>
+        <div class="brand"><img class="brand-logo" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMjQgMTEyIiB3aWR0aD0iMjI0IiBoZWlnaHQ9IjExMiI+Cjx0aXRsZT7QotCr0KU8L3RpdGxlPgo8cmVjdCB3aWR0aD0iMjI0IiBoZWlnaHQ9IjExMiIgcng9IjIwIiBmaWxsPSIjMTAxMDE0Ii8+CjxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKDU1IDkpIHNjYWxlKDAuMjg1KSIgZmlsbD0iI0ZGNUEyNCI+CjxwYXRoIGQ9Ik0wIDE1MCAxMDMgNzIgMTQ1IDk2IDIyMiAxMiAyODQgNzYgMzEzIDU1IDQwMCAxNDggMzEzIDkwIDI4NSAxMTAKICAyMjIgNTIgMTcyIDEwNCAyMDUgOTYgMTE3IDE1MCAxMzUgMTE2IDEwMyAxMDRaIi8+CjwvZz4KPGcgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoMTUgNTQpIHNjYWxlKDAuMzE5KSI+CjxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKDMxIDApIHNrZXdYKC0xMikiIGZpbGw9IiNGQUZBRjciPgogIDxwYXRoIGQ9Ik0xMCAwSDE3M0wxNjQgMzRIMTEwVjEyNkg2NFYzNEgwWiIvPgogIDxwYXRoIGZpbGwtcnVsZT0iZXZlbm9kZCIgZD0iTTE4MyAwSDIyN1YzOUgyNzhDMzA4IDM5IDMyNiA1NCAzMjYgODFTMzA2IDEyNiAyNzUgMTI2SDE4M1oKICAgIE0yMjcgNzFWOTRIMjcxQzI4MCA5NCAyODQgOTAgMjg0IDgyUzI4MCA3MSAyNzEgNzFaIi8+CiAgPHBhdGggZD0iTTMzNiAwSDM4MFYxMjZIMzM2WiIvPgogIDxwYXRoIGQ9Ik0zOTEgMEg0NDVMNDc4IDQzIDUxMyAwSDU2OEw1MDYgNjMgNTY2IDEyNkg1MTFMNDc2IDg1IDQ0MiAxMjZIMzg3TDQ1MCA2M1oiLz4KPC9nPgo8cGF0aCBmaWxsPSIjRkY1QTI0IiBkPSJNMCAxNDIgMTU5IDExMCA2MTAgNTQgNTgxIDY2IDE2NiAxMjJaIi8+CjwvZz4KPC9zdmc+Cg==" width="86" height="43" alt="ТЫХ"><small>бот · Telegram</small></div>
       </header>
       <div class="messages">
-        <div class="bubble"><b>Привет! Это «ТЫХ».</b>Выбери зал и свободное время для тренировки.</div>
+        <div class="bubble"><b lang="os">Ӕгас нӕм цу!</b>Добро пожаловать в «ТЫХ». Выбери зал и свободное время для тренировки.</div>
         <div class="chat-actions">
           <button type="button" data-screen="home"><span class="icon-label">Открыть мини-приложение <i data-lucide="arrow-up-right" aria-hidden="true"></i></span></button>
           <button type="button" data-screen="history"><span class="icon-label"><i data-lucide="calendar-days" aria-hidden="true"></i>Мои записи</span></button>
@@ -375,7 +376,7 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
     <section class="surface app" aria-label="Мини-приложение">
       <header class="chrome">
         <button class="back icon-button" type="button" data-action="back" aria-label="Назад" hidden><i data-lucide="arrow-left" aria-hidden="true"></i></button>
-        <span class="mark" aria-hidden="true"><i data-lucide="dumbbell"></i></span><div><b>ТЫХ</b><small>мини-приложение</small></div>
+        <div class="brand"><img class="brand-logo" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMjQgMTEyIiB3aWR0aD0iMjI0IiBoZWlnaHQ9IjExMiI+Cjx0aXRsZT7QotCr0KU8L3RpdGxlPgo8cmVjdCB3aWR0aD0iMjI0IiBoZWlnaHQ9IjExMiIgcng9IjIwIiBmaWxsPSIjMTAxMDE0Ii8+CjxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKDU1IDkpIHNjYWxlKDAuMjg1KSIgZmlsbD0iI0ZGNUEyNCI+CjxwYXRoIGQ9Ik0wIDE1MCAxMDMgNzIgMTQ1IDk2IDIyMiAxMiAyODQgNzYgMzEzIDU1IDQwMCAxNDggMzEzIDkwIDI4NSAxMTAKICAyMjIgNTIgMTcyIDEwNCAyMDUgOTYgMTE3IDE1MCAxMzUgMTE2IDEwMyAxMDRaIi8+CjwvZz4KPGcgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoMTUgNTQpIHNjYWxlKDAuMzE5KSI+CjxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKDMxIDApIHNrZXdYKC0xMikiIGZpbGw9IiNGQUZBRjciPgogIDxwYXRoIGQ9Ik0xMCAwSDE3M0wxNjQgMzRIMTEwVjEyNkg2NFYzNEgwWiIvPgogIDxwYXRoIGZpbGwtcnVsZT0iZXZlbm9kZCIgZD0iTTE4MyAwSDIyN1YzOUgyNzhDMzA4IDM5IDMyNiA1NCAzMjYgODFTMzA2IDEyNiAyNzUgMTI2SDE4M1oKICAgIE0yMjcgNzFWOTRIMjcxQzI4MCA5NCAyODQgOTAgMjg0IDgyUzI4MCA3MSAyNzEgNzFaIi8+CiAgPHBhdGggZD0iTTMzNiAwSDM4MFYxMjZIMzM2WiIvPgogIDxwYXRoIGQ9Ik0zOTEgMEg0NDVMNDc4IDQzIDUxMyAwSDU2OEw1MDYgNjMgNTY2IDEyNkg1MTFMNDc2IDg1IDQ0MiAxMjZIMzg3TDQ1MCA2M1oiLz4KPC9nPgo8cGF0aCBmaWxsPSIjRkY1QTI0IiBkPSJNMCAxNDIgMTU5IDExMCA2MTAgNTQgNTgxIDY2IDE2NiAxMjJaIi8+CjwvZz4KPC9zdmc+Cg==" width="86" height="43" alt="ТЫХ"><small>Почасовая аренда</small></div>
         <button class="minor icon-button theme-toggle" type="button" data-action="theme" aria-label="Переключить тему"><i data-lucide="moon" aria-hidden="true"></i></button>
       </header>
       <div class="stage" data-view></div>
@@ -389,7 +390,7 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
   </div>
   <section class="surface admin" data-admin hidden aria-label="Админ-панель ТЫХ">
     <header class="chrome">
-      <span class="mark" aria-hidden="true"><i data-lucide="dumbbell"></i></span><div><b>ТЫХ</b><small>управление залами</small></div>
+      <div class="brand"><img class="brand-logo" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMjQgMTEyIiB3aWR0aD0iMjI0IiBoZWlnaHQ9IjExMiI+Cjx0aXRsZT7QotCr0KU8L3RpdGxlPgo8cmVjdCB3aWR0aD0iMjI0IiBoZWlnaHQ9IjExMiIgcng9IjIwIiBmaWxsPSIjMTAxMDE0Ii8+CjxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKDU1IDkpIHNjYWxlKDAuMjg1KSIgZmlsbD0iI0ZGNUEyNCI+CjxwYXRoIGQ9Ik0wIDE1MCAxMDMgNzIgMTQ1IDk2IDIyMiAxMiAyODQgNzYgMzEzIDU1IDQwMCAxNDggMzEzIDkwIDI4NSAxMTAKICAyMjIgNTIgMTcyIDEwNCAyMDUgOTYgMTE3IDE1MCAxMzUgMTE2IDEwMyAxMDRaIi8+CjwvZz4KPGcgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoMTUgNTQpIHNjYWxlKDAuMzE5KSI+CjxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKDMxIDApIHNrZXdYKC0xMikiIGZpbGw9IiNGQUZBRjciPgogIDxwYXRoIGQ9Ik0xMCAwSDE3M0wxNjQgMzRIMTEwVjEyNkg2NFYzNEgwWiIvPgogIDxwYXRoIGZpbGwtcnVsZT0iZXZlbm9kZCIgZD0iTTE4MyAwSDIyN1YzOUgyNzhDMzA4IDM5IDMyNiA1NCAzMjYgODFTMzA2IDEyNiAyNzUgMTI2SDE4M1oKICAgIE0yMjcgNzFWOTRIMjcxQzI4MCA5NCAyODQgOTAgMjg0IDgyUzI4MCA3MSAyNzEgNzFaIi8+CiAgPHBhdGggZD0iTTMzNiAwSDM4MFYxMjZIMzM2WiIvPgogIDxwYXRoIGQ9Ik0zOTEgMEg0NDVMNDc4IDQzIDUxMyAwSDU2OEw1MDYgNjMgNTY2IDEyNkg1MTFMNDc2IDg1IDQ0MiAxMjZIMzg3TDQ1MCA2M1oiLz4KPC9nPgo8cGF0aCBmaWxsPSIjRkY1QTI0IiBkPSJNMCAxNDIgMTU5IDExMCA2MTAgNTQgNTgxIDY2IDE2NiAxMjJaIi8+CjwvZz4KPC9zdmc+Cg==" width="86" height="43" alt="ТЫХ"><small>Управление залами</small></div>
       <button class="minor icon-button theme-toggle" type="button" data-action="theme" aria-label="Переключить тему"><i data-lucide="moon" aria-hidden="true"></i></button>
     </header>
     <div class="stage">
