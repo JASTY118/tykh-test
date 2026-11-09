@@ -477,6 +477,14 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
       #tykh-gym .launch-greeting::before {
         content:""; width:27px; height:1px; background:currentColor; opacity:.55;
       }
+      #tykh-gym .launch[data-admin-welcome] { animation-duration:1550ms; }
+      #tykh-gym .launch[data-admin-welcome] .launch-brand { width:min(80%,330px); }
+      #tykh-gym .launch[data-admin-welcome] .launch-ridge { width:min(59%,148px); }
+      #tykh-gym .launch[data-admin-welcome] .launch-wordmark { width:min(100%,250px); }
+      #tykh-gym .launch[data-admin-welcome] .launch-greeting {
+        color:var(--ink); font-size:clamp(20px,6vw,28px); font-weight:700; line-height:1.2; overflow-wrap:anywhere;
+      }
+      #tykh-gym .launch[data-admin-welcome] .launch-greeting::before { color:var(--accent); }
       #tykh-gym .launch-city {
         position:absolute; inset-inline:0; bottom:max(24px,env(safe-area-inset-bottom)); text-align:center;
         animation:tykh-launch-greeting 380ms ease-out 310ms both;
@@ -1488,10 +1496,15 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
     const page = admin ? 'admin:' + state.admin + ':' + (editor?.id ?? (editor ? 'new' : '')) :
       'client:' + state.screen + ':' + (state.screen === 'article' ? state.article : '');
     const changedPage = renderedPage !== undefined && renderedPage !== page;
+    const enteringAdmin = admin && !renderedPage?.startsWith('admin:');
     if (changedPage) scrollToStart();
     if (!reducedMotion.matches) animateScreen(admin ? adminView : view,changedPage);
     renderedPage = page;
     renderedPhoto = state.photo;
+    if (enteringAdmin) {
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded',playAdminWelcome,{once:true});
+      else playAdminWelcome();
+    }
   }
 
   function animateScreen(panel,changedPage) {
@@ -1516,19 +1529,39 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
   }
 
   function playLaunch() {
-    if (adminPage || state.role !== 'client' || reducedMotion.matches || document.hidden) return;
+    if (adminPage || state.role !== 'client') return;
+    showLaunch('Ӕгас нӕм цу!','Владикавказ','os',false);
+  }
+  function playAdminWelcome() {
+    if (state.role !== 'admin') return;
+    const admin = state.administrator;
+    showLaunch('Привет, ' + admin.name + '!',adminRoles[admin.role].label,'ru',true);
+  }
+  let dismissLaunch;
+  function showLaunch(message,caption,language,adminWelcome) {
+    if (reducedMotion.matches || document.hidden) return;
+    dismissLaunch?.();
     const launch = root.querySelector('.launch');
-    const controls = new AbortController();
-    const dismiss = () => {
-      launch.hidden = true;
-      controls.abort();
-    };
+    const greeting = launch.querySelector('.launch-greeting');
+    greeting.textContent = message;
+    greeting.lang = language;
+    launch.querySelector('.launch-city').textContent = caption;
+    launch.toggleAttribute('data-admin-welcome',adminWelcome);
     launch.hidden = false;
     const animation = launch.getAnimations()[0];
     if (!animation) {
-      dismiss();
+      launch.hidden = true;
       return;
     }
+    const controls = new AbortController();
+    const dismiss = () => {
+      if (dismissLaunch !== dismiss) return;
+      dismissLaunch = null;
+      launch.hidden = true;
+      controls.abort();
+      animation.cancel();
+    };
+    dismissLaunch = dismiss;
     document.addEventListener('pointerdown',dismiss,{capture:true,signal:controls.signal});
     document.addEventListener('keydown',dismiss,{capture:true,signal:controls.signal});
     animation.finished.then(dismiss,dismiss);
