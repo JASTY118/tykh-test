@@ -358,7 +358,78 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
       #tykh-gym .chooser > span { margin-left:0; flex-basis:100%; text-align:center; }
     }
     @media (prefers-reduced-motion:no-preference) {
-      #tykh-gym button:not(:disabled):active { transform:translateY(1px); }
+      #tykh-gym button { transition:transform 160ms cubic-bezier(.2,.8,.2,1),background-color 160ms,border-color 160ms; }
+      #tykh-gym button:not(:disabled):active { transform:scale(.97); }
+      #tykh-gym .bar button[aria-current="page"] svg { animation:tykh-tab 280ms cubic-bezier(.2,.8,.2,1) both; }
+      @keyframes tykh-tab {
+        35% { transform:translateY(-3px) scale(1.12); }
+      }
+    }
+    #tykh-gym .launch { display:none; }
+    @media (prefers-reduced-motion:no-preference) {
+      #tykh-gym .launch {
+        --launch-edge:light-dark(#dce8f6,#1e3a55);
+        --launch-center:light-dark(#f8fbff,#142539);
+        --launch-base:light-dark(#eaf0f8,#101821);
+        display:grid; place-items:center; position:fixed; inset:0; z-index:20; overflow:hidden;
+        pointer-events:none; color:var(--green);
+        background:radial-gradient(ellipse at 50% 41%,var(--launch-edge),transparent 66%),
+          linear-gradient(155deg,var(--launch-center),var(--launch-base) 75%);
+        animation:tykh-launch-exit 1380ms cubic-bezier(.5,0,.2,1) both;
+      }
+      #tykh-gym .launch::before {
+        content:""; position:absolute; inset:0; opacity:.26;
+        background:radial-gradient(circle,currentColor .6px,transparent 1px) center / 18px 18px;
+        mask-image:linear-gradient(transparent,#000 35%,#000 65%,transparent);
+      }
+      #tykh-gym .launch-contours {
+        position:absolute; top:50%; left:50%; width:clamp(620px,120vw,1080px); height:auto;
+        fill:none; stroke:currentColor; stroke-width:1; opacity:.15;
+        transform:translate(-50%,-50%); animation:tykh-launch-contours 1120ms cubic-bezier(.14,.8,.2,1) both;
+      }
+      #tykh-gym .launch-brand {
+        position:relative; display:grid; justify-items:center; align-content:center;
+        gap:clamp(12px,3vh,20px); width:min(70%,250px); text-align:center;
+      }
+      #tykh-gym .launch-ridge {
+        display:block; width:59%; height:auto; fill:currentColor;
+        animation:tykh-launch-ridge 560ms cubic-bezier(.16,1,.3,1) both;
+      }
+      #tykh-gym .launch-wordmark {
+        display:block; width:100%; height:auto; fill:var(--ink);
+        animation:tykh-launch-wordmark 510ms cubic-bezier(.19,1,.22,1) 120ms both;
+      }
+      #tykh-gym .launch-greeting {
+        display:grid; gap:8px; justify-items:center; margin-top:4px;
+        animation:tykh-launch-greeting 380ms ease-out 310ms both;
+      }
+      #tykh-gym .launch-greeting::before {
+        content:""; width:27px; height:1px; background:currentColor; opacity:.55;
+      }
+      #tykh-gym .launch-city {
+        position:absolute; inset-inline:0; bottom:max(24px,env(safe-area-inset-bottom)); text-align:center;
+        animation:tykh-launch-greeting 380ms ease-out 310ms both;
+      }
+      @keyframes tykh-launch-exit {
+        0%,72% { clip-path:inset(0); }
+        100% { clip-path:inset(0 0 100% 0 round 0 0 26px 26px); visibility:hidden; }
+      }
+      @keyframes tykh-launch-contours {
+        from { opacity:0; transform:translate(-50%,-42%) scale(1.18); }
+        to { opacity:.15; transform:translate(-50%,-50%) scale(1); }
+      }
+      @keyframes tykh-launch-ridge {
+        from { opacity:0; clip-path:inset(100% 0 0); transform:translateY(14px) scale(.89); }
+        to { opacity:1; clip-path:inset(0); transform:translateY(0) scale(1); }
+      }
+      @keyframes tykh-launch-wordmark {
+        from { opacity:.35; clip-path:inset(0 100% 0 0); transform:translateX(-14px); }
+        to { opacity:1; clip-path:inset(0); transform:translateX(0); }
+      }
+      @keyframes tykh-launch-greeting {
+        from { opacity:0; transform:translateY(8px); }
+        to { opacity:1; transform:translateY(0); }
+      }
     }
   </style>
 
@@ -373,6 +444,21 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
   <path d="M391 0H445L478 43 513 0H568L506 63 566 126H511L476 85 442 126H387L450 63Z"/>
 </g></symbol>
 </svg>
+  <div class="launch" aria-hidden="true" hidden>
+    <svg class="launch-contours" viewBox="0 0 720 400" focusable="false">
+      <path d="M-20 269 106 248 192 178 235 196 356 78 475 200 522 181 619 245 740 268
+        M-20 292 116 271 196 203 243 223 356 113 468 227 516 207 609 270 740 292
+        M-20 315 126 294 201 229 251 252 356 149 461 254 511 233 599 294 740 315
+        M-20 338 136 317 205 255 260 281 356 186 453 283 505 260 590 319 740 338
+        M-20 361 146 340 210 282 267 307 356 222 445 311 500 286 580 343 740 361"/>
+    </svg>
+    <div class="launch-brand">
+      <svg class="launch-ridge" width="148" height="51" focusable="false"><use href="#tykh-ridge"/></svg>
+      <svg class="launch-wordmark" width="250" height="53" focusable="false"><use href="#tykh-letters"/></svg>
+      <div class="launch-greeting" lang="os">Ӕгас нӕм цу!</div>
+    </div>
+    <span class="launch-city overline">Владикавказ</span>
+  </div>
   <div class="chooser" aria-label="Режим работы">
     <button class="pill" type="button" data-role="client" aria-pressed="true">Клиент</button>
     <button class="pill" type="button" data-role="admin" aria-pressed="false">Админ-панель</button>
@@ -507,6 +593,7 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
   const newsDatabase = standalone && !live ? openNewsDatabase().catch(() => null) : Promise.resolve(null);
   let publicationTimer;
   let renderedPage;
+  let renderedPhoto;
   const blockKey = (hall, date, hour) => [hall, date, hour].join('/');
   const blocks = new Set([blockKey(1,baseDate,19)]);
   const occupied = [];
@@ -1092,13 +1179,50 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
     applyTheme();
     const page = admin ? 'admin:' + state.admin + ':' + (state.newsDraft?.id ?? (state.newsDraft ? 'new' : '')) :
       'client:' + state.screen + ':' + (state.screen === 'article' ? state.article : '');
-    if (renderedPage !== undefined && renderedPage !== page && !reducedMotion.matches) {
-      const panel = admin ? adminView : view;
-      panel.getAnimations().forEach((animation) => animation.cancel());
-      panel.animate([{opacity:.35,transform:'translateY(5px)'},{opacity:1,transform:'translateY(0)'}],
-        {duration:170,easing:'ease-out'});
-    }
+    if (!reducedMotion.matches) animateScreen(admin ? adminView : view,page);
     renderedPage = page;
+    renderedPhoto = state.photo;
+  }
+
+  function animateScreen(panel,page) {
+    const changedPage = renderedPage !== undefined && renderedPage !== page;
+    const easing = 'cubic-bezier(.2,.75,.2,1)';
+    if (changedPage) {
+      panel.getAnimations().forEach((animation) => animation.cancel());
+      panel.animate([{opacity:.55,transform:'translateY(8px)'},{opacity:1,transform:'none'}],
+        {duration:240,easing});
+      if (panel === view && state.screen === 'home') {
+        panel.querySelectorAll('.stack > .hall-card:nth-child(-n+4)').forEach((card,index) => {
+          card.animate([{opacity:.4,transform:'translateY(12px)'},{opacity:1,transform:'none'}],
+            {duration:280,delay:40 + index * 50,easing,fill:'backwards'});
+        });
+      }
+    }
+    if (panel === view && (changedPage || renderedPhoto !== state.photo)) {
+      panel.querySelector('.gallery-photo')?.animate([
+        {opacity:.55,transform:'scale(1.06)',clipPath:'inset(4% 0)'},
+        {opacity:1,transform:'none',clipPath:'inset(0)'}
+      ],{duration:320,easing});
+    }
+  }
+
+  function playLaunch() {
+    if (adminPage || state.role !== 'client' || reducedMotion.matches || document.hidden) return;
+    const launch = root.querySelector('.launch');
+    const controls = new AbortController();
+    const dismiss = () => {
+      launch.hidden = true;
+      controls.abort();
+    };
+    launch.hidden = false;
+    const animation = launch.getAnimations()[0];
+    if (!animation) {
+      dismiss();
+      return;
+    }
+    document.addEventListener('pointerdown',dismiss,{capture:true,signal:controls.signal});
+    document.addEventListener('keydown',dismiss,{capture:true,signal:controls.signal});
+    animation.finished.then(dismiss,dismiss);
   }
 
   const selectedTheme = () => state.theme ?? (systemTheme.matches ? 'dark' : 'light');
@@ -1911,6 +2035,7 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
   }
   systemTheme.addEventListener('change',() => { if (state.theme === null) applyTheme(); });
   render();
+  if (standalone) document.addEventListener('DOMContentLoaded',playLaunch,{once:true});
   if (live) {
     void withServer(refreshLive);
     setInterval(pollServer,5_000);
