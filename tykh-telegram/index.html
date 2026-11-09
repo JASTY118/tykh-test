@@ -7,7 +7,7 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' https://telegram.org; style-src 'unsafe-inline'; img-src data: blob:; frame-src https://yandex.ru; base-uri 'none'; form-action 'none'">
 <title>ТЫХ</title>
 <style>
-html { overscroll-behavior-y:none; background:var(--canvas,light-dark(#ebe7e0,#151514)); }
+html { overscroll-behavior-y:none; overflow-anchor:none; background:var(--canvas,light-dark(#ebe7e0,#151514)); }
 body { margin:0; }
 #tykh-gym .chat { display:none; }
 #tykh-gym .product[data-client] { grid-template-columns:minmax(0,440px); }
@@ -207,7 +207,7 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
     #tykh-gym .hall-open svg { flex:none; color:var(--accent); }
     #tykh-gym .hall-open:focus-visible { outline-offset:-3px; }
     #tykh-gym .catalog-offer {
-      justify-self:start; min-height:44px; padding:4px 0; border:0; background:none;
+      justify-self:center; min-height:44px; padding:4px 10px; border:0; background:none; text-align:center;
       color:var(--muted); font-size:12px; text-decoration:underline; text-underline-offset:3px;
     }
     @media (hover:hover) {
@@ -706,7 +706,8 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
     const free = available(hall,date);
     return Array.from({length:duration}, (_, i) => start + i).every((hour) => free.includes(hour));
   };
-  const amount = (hall) => hall.base + (state.duration - 1) * hall.extra;
+  const amount = (hall) => hall.base + (state.duration - 1) * (hall.extra ?? hall.base);
+  const hasDifferentRate = (hall) => hall.maxHours > 1 && hall.extra != null && hall.extra !== hall.base;
   const ownBookings = () => bookings.filter((b) => b.own);
   const bookingStatus = (status) => ({paid:live ? 'Тестовая оплата' : 'Оплачено',pending:'Ожидает оплаты',cancelled:'Отменено'})[status];
   const bookingButton = (id) => '<button type="button" class="minor" data-booking="' + id + '">№ ' + id + '</button>';
@@ -796,16 +797,22 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
     if (!slots.includes(state.hour)) state.hour = slots[0] ?? 0;
     if (state.duration > (clientHall()?.maxHours ?? 1) || (slots.length && !allowed(state.duration))) state.duration = 1;
   }
+  function scrollToStart() {
+    if (standalone) window.scrollTo({top:0,behavior:'instant'});
+  }
   function navigate(target) {
-    if (target === state.screen) return;
     if (protectedScreens.has(target) && !state.authenticated) {
       state.loginTarget = target;
       target = 'login';
     }
+    if (target === state.screen) {
+      if (target === 'login') render();
+      scrollToStart();
+      return;
+    }
     state.clientCalendarOpen = false;
     state.back.push(state.screen);
     replace(target);
-    if (target === 'offer' && standalone) window.scrollTo(0,0);
   }
   function replace(target, message = '') {
     state.screen = target;
@@ -848,7 +855,8 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
     return head('Запись · ' + safe(hall.name),'Выберите время') + picker + datePicker('client') +
       (choices.length ? '<div class="three">' + starts + '</div><div class="stack"><b>Длительность</b><div class="two">' + durations +
       '</div></div><div class="tile line"><span>' + span(state) + '</span><b>' + rub(amount(hall)) + '</b></div>' +
-      (state.duration > 1 ? '<small class="quiet">Первый час ' + rub(hall.base) + ' · дополнительный ' + rub(hall.extra) + '</small>' : '') +
+      (state.duration > 1 && hasDifferentRate(hall) ? '<small class="quiet">Первый час ' + rub(hall.base) +
+        ' · дополнительный ' + rub(hall.extra) + '</small>' : '') +
       button('Продолжить','checkout','go') : empty) + alertText();
   }
   function hallMap(hall) {
@@ -887,7 +895,8 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
           '<div class="tile stack"><h3>Описание</h3><p class="hall-desc">' + safe(hall.description) +
           '</p><p class="quiet">' + iconLabel('map-pin',safe(hall.address)) + '</p>' + hallMap(hall) + '<div class="line"><span>' +
           iconLabel('clock-3','Часы работы') + '</span><b>' + hours(hall.open) + '–' + hours(hall.close) +
-          '</b></div><div class="line"><span>Первый час</span><b>' + rub(hall.base) + '</b></div></div>' +
+          '</b></div><div class="line"><span>' + (hasDifferentRate(hall) ? 'Первый час' : 'Цена за час') + '</span><b>' + rub(hall.base) +
+          '</b></div>' + (hasDifferentRate(hall) ? '<div class="line"><span>Доп. час</span><b>' + rub(hall.extra) + '</b></div>' : '') + '</div>' +
           button(iconLabel('calendar-days','Выбрать дату и время'),'slots','go');
       case 'gallery': return head(safe(hall.name),'Фотографии') + gallery(hall.photos,hall.name,true) + action('Вернуться к описанию','back');
       case 'slots': return slots(hall);
@@ -1046,6 +1055,15 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
       '<small class="quiet">До 6 фотографий · JPG, PNG или WebP · до 5 МБ каждое.</small></div>';
   }
   function hallForm(draft) {
+    const extraEnabled = draft.extra != null;
+    const prices = '<div class="' + (extraEnabled ? 'two' : 'stack') + '"><label class="field">' +
+      (extraEnabled ? 'Первый час, ₽' : 'Цена за час, ₽') + '<input name="base" type="number" min="1" max="1000000" value="' +
+      safe(draft.base) + '" required></label>' + (extraEnabled ?
+        '<label class="field">Доп. час, ₽<input name="extra" type="number" min="0" max="1000000" value="' +
+        safe(draft.extra) + '" required></label>' : '') + '</div>' +
+      '<div class="line">' + action(iconLabel(extraEnabled ? 'minus' : 'plus',
+        extraEnabled ? 'Убрать цену доп. часа' : 'Добавить цену доп. часа'),'toggle-hall-extra') +
+      (extraEnabled ? '' : '<small class="quiet">Все часы по одной цене.</small>') + '</div>';
     return head('Каталог',draft.id ? 'Редактировать зал' : 'Добавить зал') +
       '<form class="stack" data-form="hall" novalidate><label class="field">Название<input name="name" value="' + safe(draft.name) +
       '" required maxlength="60"></label><label class="field">Адрес<input name="address" value="' + safe(draft.address) +
@@ -1055,9 +1073,7 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
       '<label class="field">Описание<textarea name="description" rows="4" required maxlength="600">' +
       safe(draft.description) + '</textarea></label><div class="two"><label class="field">Открытие<select name="open">' +
       hourOptions(0,23,draft.open) + '</select></label><label class="field">Закрытие<select name="close">' +
-      hourOptions(1,24,draft.close) + '</select></label></div><div class="two"><label class="field">Первый час, ₽<input name="base" type="number" min="1" max="100000" value="' +
-      draft.base + '" required></label><label class="field">Доп. час, ₽<input name="extra" type="number" min="1" max="100000" value="' +
-      draft.extra + '" required></label></div><label class="field">Максимум часов на одну бронь<select name="maxHours">' +
+      hourOptions(1,24,draft.close) + '</select></label></div>' + prices + '<label class="field">Максимум часов на одну бронь<select name="maxHours">' +
       '<option value="1"' + (Number(draft.maxHours) === 1 ? ' selected' : '') + '>1 час</option><option value="2"' +
       (Number(draft.maxHours) === 2 ? ' selected' : '') + '>2 часа</option></select></label>' + photoEditor(draft.photos) +
       alertText() + '<div class="row-actions"><button class="go" type="submit">Сохранить зал</button>' + action('Отмена','cancel-edit') + '</div></form>';
@@ -1208,8 +1224,9 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
     } else {
       view.innerHTML = '<div class="stack">' + customerScreen() + '</div>';
       root.querySelector('.back').hidden = adminPage || state.back.length === 0;
-      const section = ['slots','checkout','payment','confirmed','failure'].includes(state.screen) ? 'slots' :
-        ['news','article'].includes(state.screen) ? 'news' : ['profile','history','personal','logout'].includes(state.screen) ? 'profile' : 'home';
+      const screen = ['login','otp'].includes(state.screen) ? state.loginTarget : state.screen;
+      const section = ['slots','checkout','payment','confirmed','failure'].includes(screen) ? 'slots' :
+        ['news','article'].includes(screen) ? 'news' : ['profile','history','personal','logout'].includes(screen) ? 'profile' : 'home';
       root.querySelectorAll('.bar button').forEach((tab) => {
         if (tab.dataset.screen === section) tab.setAttribute('aria-current','page');
         else tab.removeAttribute('aria-current');
@@ -1229,15 +1246,17 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
       } else chatNews.textContent = '';
     }
     applyTheme();
-    const page = admin ? 'admin:' + state.admin + ':' + (state.newsDraft?.id ?? (state.newsDraft ? 'new' : '')) :
+    const editor = state.admin === 'halls' ? state.draft : state.admin === 'news' ? state.newsDraft : null;
+    const page = admin ? 'admin:' + state.admin + ':' + (editor?.id ?? (editor ? 'new' : '')) :
       'client:' + state.screen + ':' + (state.screen === 'article' ? state.article : '');
-    if (!reducedMotion.matches) animateScreen(admin ? adminView : view,page);
+    const changedPage = renderedPage !== undefined && renderedPage !== page;
+    if (changedPage) scrollToStart();
+    if (!reducedMotion.matches) animateScreen(admin ? adminView : view,changedPage);
     renderedPage = page;
     renderedPhoto = state.photo;
   }
 
-  function animateScreen(panel,page) {
-    const changedPage = renderedPage !== undefined && renderedPage !== page;
+  function animateScreen(panel,changedPage) {
     const easing = 'cubic-bezier(.2,.75,.2,1)';
     if (changedPage) {
       panel.getAnimations().forEach((animation) => animation.cancel());
@@ -1393,7 +1412,7 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
   }
   function beginHall(hall) {
     state.draft = hall ? {...hall,photos:[...hall.photos]} :
-      {name:'',address:'',description:'',open:9,close:21,base:600,extra:500,maxHours:2,visible:true,photos:[]};
+      {name:'',address:'',description:'',open:9,close:21,base:600,extra:null,maxHours:2,visible:true,photos:[]};
     const location = hall?.location;
     state.draft.mapPoint = location ? location.latitude + ', ' + location.longitude : '';
     state.alert = '';
@@ -1525,6 +1544,13 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
         }
         break;
       case 'new-hall': beginHall(); return;
+      case 'toggle-hall-extra': {
+        const adding = state.draft.extra == null;
+        state.draft.extra = adding ? '' : null;
+        render();
+        adminView.querySelector(adding ? '[name="extra"]' : '[data-action="toggle-hall-extra"]').focus({preventScroll:true});
+        return;
+      }
       case 'cancel-edit': state.draft = null; state.alert = ''; break;
       case 'cancel-delete': state.deleteHall = null; break;
       case 'delete-hall': {
@@ -1558,11 +1584,13 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
       return;
     }
     if (d.adminTab) {
+      const alreadyActive = state.admin === d.adminTab;
       state.admin = d.adminTab;
       state.calendarOpen = false;
       state.adminBooking = null;
       state.alert = '';
       render();
+      if (alreadyActive) scrollToStart();
       return;
     }
     if (d.openHall) {
@@ -1795,8 +1823,6 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
       }
       const open = form.elements.namedItem('open');
       const close = form.elements.namedItem('close');
-      const base = form.elements.namedItem('base');
-      const extra = form.elements.namedItem('extra');
       const starts = Number(open.value);
       const ends = Number(close.value);
       if (starts >= ends) {
@@ -1804,9 +1830,6 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
       } else if (bookings.some((b) => b.hall === state.draft.id && b.status !== 'cancelled' &&
         (b.hour < starts || b.hour + b.duration > ends))) {
         problems.set(close,'Новый график должен включать время всех активных записей.');
-      }
-      if (!problems.has(base) && !problems.has(extra) && Number(extra.value) >= Number(base.value)) {
-        problems.set(extra,'Цена должна быть ниже, чем за первый час.');
       }
     }
     return problems;
@@ -1847,7 +1870,7 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
     const edited = {...draft,name:String(data.get('name')).trim(),address:String(data.get('address')).trim(),
       location:mapPoint(String(data.get('mapPoint') ?? coordinates)),
       description:String(data.get('description')).trim(),open:Number(data.get('open')),close:Number(data.get('close')),
-      base:Number(data.get('base')),extra:Number(data.get('extra')),maxHours:Number(data.get('maxHours'))};
+      base:Number(data.get('base')),extra:data.has('extra') ? Number(data.get('extra')) : null,maxHours:Number(data.get('maxHours'))};
     if (live) {
       void withServer(async () => {
         await mutateServer('admin/hall',edited);
