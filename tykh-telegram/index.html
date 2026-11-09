@@ -377,7 +377,7 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
     #tykh-gym .offer-section { display:grid; gap:8px; }
     #tykh-gym .offer-download { color:var(--accent); text-underline-offset:3px; }
     #tykh-gym .offer-download:focus-visible { outline:2px solid var(--focus); outline-offset:3px; }
-    #tykh-gym .consent-check { grid-template-columns:22px minmax(0,1fr); align-items:center; min-height:44px; gap:10px; cursor:pointer; }
+    #tykh-gym .consent-check { grid-template-columns:22px minmax(0,1fr); align-items:center; gap:10px; }
     #tykh-gym .consent-check input {
       appearance:none; width:22px; height:22px; min-height:22px; padding:0; margin:0;
       display:grid; place-items:center; border-radius:5px; border-color:var(--muted); cursor:pointer;
@@ -388,9 +388,10 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
       transform:translateY(-1px) rotate(-45deg);
     }
     #tykh-gym .terms-link {
-      justify-self:start; min-height:40px; padding:2px 0; color:var(--accent); background:none;
-      border:0; text-align:start; text-decoration:underline; text-underline-offset:3px;
+      display:flex; align-items:center; justify-self:start; min-height:44px; padding:2px 0;
+      color:var(--accent); text-decoration:underline; text-underline-offset:3px;
     }
+    #tykh-gym .terms-link:focus-visible { outline:2px solid var(--focus); outline-offset:3px; border-radius:4px; }
     @media (max-width:475px) {
       #tykh-gym .date-info,#tykh-gym .hall-admin-row { grid-template-columns:1fr; }
       #tykh-gym .admin-nav { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); }
@@ -936,8 +937,9 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
   }
   const fullNameField = (value) => '<label class="field">ФИО<input name="name" autocomplete="name" placeholder="Фамилия Имя Отчество" value="' +
     safe(value) + '" required maxlength="120"></label>';
-  const consentField = (name,checked,label) => '<label class="field consent-check"><input type="checkbox" name="' + name +
-    '" required' + (checked ? ' checked' : '') + '><span>' + label + '</span></label>';
+  const consentField = (name,checked,label,screen) => '<div class="field consent-check"><input type="checkbox" name="' + name +
+    '" aria-labelledby="' + name + '-link" required' + (checked ? ' checked' : '') + '>' +
+    '<a id="' + name + '-link" class="terms-link" href="#' + screen + '" data-screen="' + screen + '">' + label + '</a></div>';
   const visitButton = (id) => '<button type="button" class="minor" data-visit="' + id + '">' +
     iconLabel('key-round','Открыть бронь') + '</button>';
   function bookingCard(b) {
@@ -1107,8 +1109,8 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
           '<form class="stack" data-form="login" novalidate><label class="field">Номер телефона<input name="phone" type="tel" value="' +
           safe(live ? state.phoneDraft : account.phone) + '" placeholder="+7 900 000-00-00" maxlength="24" autocomplete="tel"' +
           (live ? ' required' : ' readonly') + '></label>' +
-          consentField('personalConsent',state.personalConsent,'Согласен на обработку персональных данных') +
-          button('Прочитать текст согласия','privacy-consent','terms-link') + '<button type="submit" class="go">Получить код</button></form>';
+          consentField('personalConsent',state.personalConsent,'Согласен на обработку персональных данных','privacy-consent') +
+          '<button type="submit" class="go">Получить код</button></form>';
       case 'otp':
         if (live) return head('Вход по СМС','Введите код','Тестовый код появится в окне локального сервера.') + alertText() +
           '<form class="stack" data-form="otp" novalidate><label class="field">СМС-код<input name="code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" required autocomplete="one-time-code"></label><button class="go" type="submit">Подтвердить</button></form>' +
@@ -1133,8 +1135,7 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
         return head('Оплата',live ? 'Тестовая оплата' : 'Ожидает оплаты',live ? 'Деньги не списываются. Слот удерживается до 10 минут.' : 'Интервал удерживается на время оплаты.') + alertText() +
           '<div class="tile line"><span>' + span(state.hold) + '</span><b>' + rub(state.hold.price) + '</b></div>' +
           telegramReminderControl() + '<form class="stack" data-form="payment" novalidate>' +
-          consentField('offerConsent',state.offerConsent,'Я принимаю условия публичной оферты') +
-          button('Публичная оферта','offer','terms-link') +
+          consentField('offerConsent',state.offerConsent,'Я принимаю условия публичной оферты','offer') +
           '<button type="submit" class="go">Подтвердить оплату</button></form>' +
           action('Отклонить платёж','fail') + action('Завершить ожидание','expired');
       case 'confirmed':
@@ -1147,7 +1148,7 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
         return head('Личный кабинет','Профиль',account.phone) +
           '<div class="tile"><b>' + safe(account.name) + '</b>' + (account.email ? '<p class="quiet">' + safe(account.email) + '</p>' : '') + '</div>' +
           button('Мои записи','history','go') + button('Личные данные','personal') +
-          '<div class="two">' + button('Контакты','contacts') + button('Оферта','offer') + '</div>' + button('Выйти','logout');
+          '<div class="two">' + button('Контакты','contacts') + button('Положения','documents') + '</div>' + button('Выйти','logout');
       case 'history': return bookingHistory();
       case 'visit': return visitScreen();
       case 'personal':
@@ -1179,6 +1180,18 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
       case 'contacts':
         return head('Помощь','Контакты') + '<div class="tile stack"><p><b>Телефон</b><br>+7 900 000-00-00</p><p><b>Электронная почта</b><br>support@example.com</p></div>' +
           button('Публичная оферта','offer');
+      case 'documents':
+        return head('Личный кабинет','Положения') + button('Положение об обработке персональных данных','privacy-policy') +
+          button('Публичная оферта','offer') + action('Назад','back');
+      case 'privacy-policy':
+        return head('Документы','Положение об обработке персональных данных','Проект для тестовой версии «ТЫХ».') +
+          '<div class="tile stack"><h3>Оператор</h3><p>[Наименование или ФИО оператора, адрес, контакт для обращений]</p>' +
+          '<h3>Данные и цели</h3><p>Номер телефона используется для входа. ФИО, электронная почта и пол, если он указан, хранятся в профиле. ' +
+          'Имя, контакты и сведения о записи используются для бронирования зала и связи по брони. При подключении напоминаний ' +
+          'идентификатор аккаунта Telegram используется для их отправки.</p>' +
+          '<h3>Обработка и хранение</h3><p>Порядок обработки, сроки хранения, условия передачи и меры защиты: [заполнить перед запуском].</p>' +
+          '<h3>Обращения</h3><p>Запросить сведения о своих данных, уточнить их или отозвать согласие можно по адресу [email оператора].</p></div>' +
+          action('Назад','back');
       case 'offer':
         return head('Документы','Публичная оферта','Проект условий бронирования зала «ТЫХ». Реквизиты исполнителя будут заполнены перед запуском.') +
           (standalone ? '<a class="minor offer-download" href="offer.docx" download="Оферта ТЫХ.docx">' + iconLabel('download','Скачать оферту в Word') + '</a>' : '') +
@@ -1190,7 +1203,8 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
           'для входа, ведения профиля, оформления брони и связи со мной по ней. Если я разрешаю уведомления в Telegram, ' +
           'идентификатор моего аккаунта используется для отправки сообщений о брони.</p>' +
           '<h3>Обработка и отзыв</h3><p>Оператор собирает, хранит, уточняет, использует и удаляет данные. Срок обработки — [срок]. ' +
-          'Я могу отозвать согласие по адресу [email оператора].</p></div>' + action('Назад','back');
+          'Я могу отозвать согласие по адресу [email оператора].</p></div>' +
+          button('Положение об обработке персональных данных','privacy-policy') + action('Назад','back');
     }
     return '';
   }
@@ -1521,8 +1535,9 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
       view.innerHTML = '<div class="stack">' + customerScreen() + '</div>';
       root.querySelector('.back').hidden = adminPage || state.back.length === 0;
       const screen = ['login','otp','registration'].includes(state.screen) ? state.loginTarget : state.screen;
-      const section = ['slots','checkout','payment','confirmed','failure'].includes(screen) ? 'slots' :
-        ['news','article'].includes(screen) ? 'news' : ['profile','history','visit','personal','logout'].includes(screen) ? 'profile' : 'home';
+      const section = inPayment() || ['slots','checkout','confirmed','failure'].includes(screen) ? 'slots' :
+        ['news','article'].includes(screen) ? 'news' : ['profile','history','visit','personal','logout','documents'].includes(screen) ||
+          state.back.at(-1) === 'documents' ? 'profile' : 'home';
       root.querySelectorAll('.bar button').forEach((tab) => {
         if (tab.dataset.screen === section) tab.setAttribute('aria-current','page');
         else tab.removeAttribute('aria-current');
@@ -2040,8 +2055,10 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
     render();
   }
   root.addEventListener('click',(event) => {
-    const control = event.target.closest('button');
-    if (!control || control.disabled || liveBusy) return;
+    const control = event.target.closest('button,a[data-screen]');
+    if (!control) return;
+    if (control.matches('a')) event.preventDefault();
+    if (control.disabled || liveBusy) return;
     if (control.type === 'submit' && control.form?.dataset.form) {
       event.preventDefault();
       submitForm(control.form,control);
