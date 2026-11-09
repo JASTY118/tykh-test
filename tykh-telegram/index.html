@@ -344,6 +344,7 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
     #tykh-gym .publication-fields > small { grid-column:1/-1; }
     #tykh-gym .admin .go { width:auto; justify-self:start; }
     #tykh-gym .danger { color:var(--alert); }
+    #tykh-gym [data-delete-news] { color:var(--alert); min-width:44px; min-height:44px; }
     #tykh-gym .hall-desc { white-space:pre-line; overflow-wrap:anywhere; }
     #tykh-gym .hall-map { overflow:hidden; border:1px solid var(--line); border-radius:10px; background:var(--soft); }
     #tykh-gym .hall-map iframe { display:block; width:100%; height:clamp(176px,46vw,205px); border:0; }
@@ -736,7 +737,7 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
     role:'client', screen:adminPage ? 'admin-login' : 'home', back:[], admin:'today', authenticated:false, loginTarget:'profile', otpAttempts:0,
     hall:1, date:baseDate, hour:10, duration:2, photo:0, clientMonth:baseDate.slice(0,7), clientCalendarOpen:false,
     adminHall:1, adminDate:baseDate, month:baseDate.slice(0,7), calendarOpen:false, adminBooking:null, draft:null, deleteHall:null,
-    hold:null, confirmed:null, nextHall:3, nextBooking:105, nextNews:2, article:null, newsDraft:null,
+    hold:null, confirmed:null, nextHall:3, nextBooking:105, nextNews:2, article:null, newsDraft:null, deleteNews:null,
     alert:'', emailDraft:'', nameDraft:'', userQuery:'', adminUser:null, theme:null, savingNews:false,
     phoneDraft:'', challenge:'', personalConsent:false, offerConsent:false, visit:null, visitAccess:null, telegramReady:false, telegramPermission:null,
     administrator:administrators[0],canManage:false,staffDraft:null,removeStaff:null,auditSection:'',auditQuery:'',auditNext:null
@@ -1419,10 +1420,13 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
           ? 'Запланировано · ' + newsDate(item.publishedAt) + ' в ' + newsTime(item.publishedAt)
           : 'Опубликовано · ' + newsDate(item.publishedAt);
         const publishLabel = item.publishedAt === null ? 'Опубликовать' : scheduled ? 'Отменить выпуск' : 'Снять с публикации';
+        const controls = state.deleteNews === item.id ? '<div class="stack"><p>Удалить эту новость?</p><div class="row-actions">' +
+          action('Отмена','cancel-delete-news') + action('Удалить','confirm-delete-news','minor danger') + '</div></div>' :
+          '<div class="row-actions"><button type="button" class="minor" data-edit-news="' + item.id + '">' +
+          iconLabel('pencil','Редактировать') + '</button><button type="button" class="minor" data-publish-news="' + item.id + '">' +
+          publishLabel + '</button>' + iconButton('trash-2','Удалить новость','data-delete-news="' + item.id + '"') + '</div>';
         return '<div class="tile hall-admin-row"><div><h3>' + safe(item.title) + '</h3><small class="quiet">' + status +
-          ' · ' + item.photos.length + ' фото</small></div><div class="row-actions">' +
-          '<button type="button" class="minor" data-edit-news="' + item.id + '">' + iconLabel('pencil','Редактировать') +
-          '</button><button type="button" class="minor" data-publish-news="' + item.id + '">' + publishLabel + '</button></div></div>';
+          ' · ' + item.photos.length + ' фото</small></div>' + controls + '</div>';
       }).join('');
   }
   function renderAdmin() {
@@ -1771,6 +1775,7 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
     render();
   }
   function beginNews(item) {
+    state.deleteNews = null;
     state.newsDraft = item ? {...item,photos:[...item.photos]} : {title:'',description:'',photos:[],publishedAt:null};
     const scheduled = item?.publishedAt > Date.now();
     const [releaseDate,releaseTime] = scheduled ? moscowFields(item.publishedAt) : ['',''];
@@ -1825,6 +1830,7 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
     if (!enter) {
       state.staffDraft = null;
       state.removeStaff = null;
+      state.deleteNews = null;
     }
     await syncServer();
     render();
@@ -2017,6 +2023,15 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
         return;
       }
       case 'new-news': beginNews(); return;
+      case 'cancel-delete-news': {
+        const id = state.deleteNews;
+        state.deleteNews = null;
+        state.alert = '';
+        render();
+        adminView.querySelector('[data-delete-news="' + id + '"]')?.focus({preventScroll:true});
+        return;
+      }
+      case 'confirm-delete-news': void deleteNews(); return;
       case 'toggle-news-schedule': state.newsDraft.scheduled = !state.newsDraft.scheduled; break;
       case 'cancel-news': state.newsDraft = null; state.alert = ''; break;
       case 'nearest': pickNearest(); return;
@@ -2068,6 +2083,7 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
     if (d.role) {
       if (live) return;
       state.role = d.role;
+      state.deleteNews = null;
       state.alert = '';
       render();
       saveViewPreferences();
@@ -2079,6 +2095,7 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
       state.calendarOpen = false;
       state.adminBooking = null;
       state.removeStaff = null;
+      state.deleteNews = null;
       state.alert = '';
       render();
       if (alreadyActive) scrollToStart();
@@ -2174,6 +2191,12 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
       return;
     } else if (d.editNews) {
       beginNews(news.find((item) => item.id === Number(d.editNews)));
+      return;
+    } else if (d.deleteNews) {
+      state.deleteNews = Number(d.deleteNews);
+      state.alert = '';
+      render();
+      adminView.querySelector('[data-action="cancel-delete-news"]').focus({preventScroll:true});
       return;
     } else if (d.publishNews) {
       const item = news.find((post) => post.id === Number(d.publishNews));
@@ -2488,7 +2511,32 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
   }
   function refreshNewsScreens() {
     updateNewsClock();
-    if (state.role === 'admin' ? state.admin === 'news' && !state.newsDraft : ['news','home'].includes(state.screen)) render();
+    if (state.role === 'admin' ? state.admin === 'news' && !state.newsDraft : ['news','home','article'].includes(state.screen)) render();
+  }
+  async function deleteNews() {
+    const item = news.find((post) => post.id === state.deleteNews);
+    if (!item || state.savingNews) return;
+    state.savingNews = true;
+    try {
+      if (live) {
+        await mutateServer('admin/news-delete',{id:item.id});
+      } else {
+        const database = await newsDatabase;
+        if (!database && standalone) throw new Error('News storage is unavailable');
+        if (database) await newsTransaction(database,'readwrite',(posts) => posts.delete(item.id));
+        const index = news.findIndex((post) => post.id === item.id);
+        if (index >= 0) news.splice(index,1);
+        previewAudit('news','Удалил новость',item.title);
+        updateNewsClock();
+      }
+      if (state.deleteNews === item.id) state.deleteNews = null;
+      state.alert = '';
+    } catch (error) {
+      state.alert = error.status ? error.message : 'Не удалось удалить новость.';
+    } finally {
+      state.savingNews = false;
+      render();
+    }
   }
   async function storeNews(item) {
     if (state.savingNews) return false;
