@@ -384,6 +384,38 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
       @keyframes tykh-tab {
         35% { transform:translateY(-3px) scale(1.12); }
       }
+      :root[data-tykh-theme-transition] #tykh-gym button { transition-property:transform; }
+      #tykh-gym [data-theme-reveal] > svg { view-transition-name:tykh-theme-icon; }
+      :root[data-tykh-theme-transition]::view-transition { pointer-events:none; }
+      :root[data-tykh-theme-transition]::view-transition-old(root),
+      :root[data-tykh-theme-transition]::view-transition-new(root),
+      :root[data-tykh-theme-transition]::view-transition-old(tykh-theme-icon),
+      :root[data-tykh-theme-transition]::view-transition-new(tykh-theme-icon) {
+        mix-blend-mode:normal;
+      }
+      :root[data-tykh-theme-transition]::view-transition-old(root) { animation:none; }
+      :root[data-tykh-theme-transition]::view-transition-new(root) {
+        animation:tykh-theme-wave 560ms cubic-bezier(.35,0,.2,1) both;
+      }
+      :root[data-tykh-theme-transition]::view-transition-group(tykh-theme-icon) { z-index:1; }
+      :root[data-tykh-theme-transition]::view-transition-old(tykh-theme-icon) {
+        animation:tykh-theme-icon-out 140ms ease-in both;
+      }
+      :root[data-tykh-theme-transition]::view-transition-new(tykh-theme-icon) {
+        animation:tykh-theme-icon-in 340ms cubic-bezier(.2,.75,.2,1) 65ms both;
+      }
+      @keyframes tykh-theme-wave {
+        from { clip-path:circle(0 at var(--tykh-wave-x) var(--tykh-wave-y)); }
+        to { clip-path:circle(var(--tykh-wave-radius) at var(--tykh-wave-x) var(--tykh-wave-y)); }
+      }
+      @keyframes tykh-theme-icon-out {
+        to { opacity:0; transform:rotate(-65deg) scale(.55); }
+      }
+      @keyframes tykh-theme-icon-in {
+        from { opacity:0; transform:rotate(65deg) scale(.55); }
+        65% { opacity:1; transform:rotate(-8deg) scale(1.17); }
+        to { opacity:1; transform:none; }
+      }
     }
     #tykh-gym .launch { display:none; }
     @media (prefers-reduced-motion:no-preference) {
@@ -1272,6 +1304,52 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
     try { localStorage.setItem(preferencesKey,JSON.stringify({role:state.role,theme:state.theme})); } catch {}
   }
 
+  let themeTransition;
+  function toggleTheme(control) {
+    const changeTheme = () => {
+      state.theme = selectedTheme() === 'dark' ? 'light' : 'dark';
+      applyTheme();
+      saveViewPreferences();
+    };
+    if (themeTransition) {
+      themeTransition.skipTransition();
+      void themeTransition.updateCallbackDone.then(changeTheme);
+      return;
+    }
+    if (reducedMotion.matches || document.hidden) {
+      changeTheme();
+      return;
+    }
+    if (!document.startViewTransition) {
+      changeTheme();
+      control.querySelector('svg')?.animate([
+        {opacity:0,transform:'rotate(55deg) scale(.65)'},
+        {opacity:1,transform:'none'}
+      ],{duration:260,easing:'cubic-bezier(.2,.75,.2,1)'});
+      return;
+    }
+
+    const page = document.documentElement;
+    const {left,top,width,height} = control.getBoundingClientRect();
+    const x = left + width / 2;
+    const y = top + height / 2;
+    const radius = Math.ceil(Math.hypot(Math.max(x,innerWidth - x),Math.max(y,innerHeight - y)));
+    const wave = {'--tykh-wave-x':x,'--tykh-wave-y':y,'--tykh-wave-radius':radius};
+    for (const [name,value] of Object.entries(wave)) page.style.setProperty(name,value + 'px');
+    page.setAttribute('data-tykh-theme-transition','');
+    control.setAttribute('data-theme-reveal','');
+
+    const clearTransition = () => {
+      page.removeAttribute('data-tykh-theme-transition');
+      control.removeAttribute('data-theme-reveal');
+      for (const name of Object.keys(wave)) page.style.removeProperty(name);
+      themeTransition = null;
+    };
+    themeTransition = document.startViewTransition(changeTheme);
+    void themeTransition.ready.catch(() => {});
+    void themeTransition.finished.then(clearTransition,clearTransition);
+  }
+
   function pickAdminDate(date) {
     state.adminDate = date;
     state.month = date.slice(0,7);
@@ -1390,11 +1468,6 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
       }
     }
     switch (name) {
-      case 'theme':
-        state.theme = selectedTheme() === 'dark' ? 'light' : 'dark';
-        applyTheme();
-        saveViewPreferences();
-        return;
       case 'back': {
         if (state.screen === 'payment') state.hold = null;
         const destination = state.back.pop() || 'home';
@@ -1515,6 +1588,7 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
       else navigate('article');
       return;
     }
+    if (d.action === 'theme') { toggleTheme(control); return; }
     if (d.action) { handleAction(d.action,d.picker); return; }
     if (d.resumePayment) {
       const hold = ownBookings().find((b) => b.id === Number(d.resumePayment) && b.status === 'pending');
