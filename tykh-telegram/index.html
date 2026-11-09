@@ -634,6 +634,7 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
   const adminRoles = {
   "owner": {
     "label": "Владелец",
+    "limit": 2,
     "description": "Управляет залами, бронями, новостями и доступом команды. Видит журнал.",
     "tabs": ["today", "schedule", "bookings", "halls", "news", "users", "administrators", "audit"]
   },
@@ -1378,31 +1379,39 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
   function administratorScreen() {
     const draft = state.staffDraft;
     if (draft) {
-      const roles = Object.entries(adminRoles).filter(([id]) => id !== 'owner');
-      const roleField = draft.role === 'owner' ? '<p><span class="badge">Владелец</span></p>' :
-        '<label class="field">Роль<select name="role">' + roles.map(([id,role]) =>
-          '<option value="' + id + '"' + (id === draft.role ? ' selected' : '') + '>' + role.label + '</option>').join('') +
+      const primary = draft.id === 1;
+      const ownerAvailable = canAssignOwner(draft.id);
+      const roleField = primary ? '<p><span class="badge">Владелец</span></p>' :
+        '<label class="field">Роль<select name="role" aria-label="Роль">' + Object.entries(adminRoles).map(([id,role]) =>
+          '<option value="' + id + '"' + (id === draft.role ? ' selected' : '') +
+          (id === 'owner' && !ownerAvailable ? ' disabled' : '') + '>' + role.label + '</option>').join('') +
         '</select></label>';
       return head('Доступ команды',draft.id ? 'Редактировать администратора' : 'Добавить администратора') + alertText() +
         '<form class="stack" data-form="administrator" novalidate><label class="field">Имя<input name="name" required maxlength="60" value="' +
         safe(draft.name) + '"></label><label class="field">Telegram ID<input name="telegramId" inputmode="numeric" pattern="[0-9]{1,16}" maxlength="16" value="' +
-        safe(draft.telegramId) + '"' + (draft.role === 'owner' ? '' : ' required') + '></label>' + roleField +
-        '<p class="quiet" data-staff-permissions>' + adminRoles[draft.role].description + '</p><div class="row-actions">' +
+        safe(draft.telegramId) + '"' + (primary ? '' : ' required') + '></label>' + roleField +
+        '<p class="quiet" data-staff-permissions>' + adminRoles[draft.role].description + '</p>' +
+        (!primary && !ownerAvailable ? '<small class="quiet">В команде уже два владельца.</small>' : '') + '<div class="row-actions">' +
         '<button type="submit" class="go">Сохранить</button>' + action('Отмена','cancel-staff') + '</div></form>';
     }
     return head('Доступ команды','Администраторы','Добавляйте администраторов по Telegram ID и назначайте роли.') +
       alertText() + action(iconLabel('plus','Добавить администратора'),'new-staff','go') +
+      '<small class="quiet">Владельцев ' + administrators.filter((member) => member.role === 'owner').length +
+      ' из ' + adminRoles.owner.limit + '</small>' +
       administrators.map((member) => {
         const role = adminRoles[member.role];
         return '<article class="tile stack staff-row"><div class="line"><div class="staff-heading"><h3>' +
           safe(member.name) + '</h3><span class="badge">' + role.label + '</span></div><small class="quiet">' +
           (member.telegramId ? 'Telegram ID · ' + member.telegramId : 'Telegram ID ещё не задан') + '</small></div>' +
           '<p class="quiet">' + role.description + '</p><div class="row-actions"><button type="button" class="minor" data-edit-staff="' +
-          member.id + '">' + iconLabel('pencil','Редактировать') + '</button>' + (member.role === 'owner' ? '' :
+          member.id + '">' + iconLabel('pencil','Редактировать') + '</button>' + (member.id === 1 ? '' :
             '<button type="button" class="minor danger" data-remove-staff="' + member.id + '">Отозвать доступ</button>') + '</div>' +
           (state.removeStaff === member.id ? '<p>Отозвать доступ для ' + safe(member.name) + '?</p><div class="row-actions">' +
             action('Подтвердить','confirm-remove-staff') + action('Отмена','cancel-remove-staff') + '</div>' : '') + '</article>';
       }).join('');
+  }
+  function canAssignOwner(id) {
+    return administrators.filter((member) => member.id !== id && member.role === 'owner').length < adminRoles.owner.limit;
   }
   function auditRows() {
     const query = state.auditQuery.trim().toLocaleLowerCase('ru-RU');
@@ -1739,7 +1748,7 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
     const draft = state.staffDraft;
     const member = {id:draft.id,name:String(data.get('name')).trim(),
       telegramId:data.get('telegramId').trim() ? Number(data.get('telegramId')) : null,
-      role:draft.role === 'owner' ? 'owner' : data.get('role')};
+      role:draft.id === 1 ? 'owner' : data.get('role')};
     if (live) {
       void withServer(async () => {
         await mutateServer('admin/administrator',member);
@@ -1764,7 +1773,7 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
   }
   function revokeStaff() {
     const id = state.removeStaff;
-    const member = administrators.find((item) => item.id === id && item.role !== 'owner');
+    const member = administrators.find((item) => item.id === id && item.id !== 1);
     if (!member) return;
     if (live) {
       void withServer(async () => {
@@ -2224,6 +2233,10 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
     }
     if (kind === 'administrator') {
       const field = form.elements.namedItem('telegramId');
+      const role = form.elements.namedItem('role');
+      if (role?.value === 'owner' && !canAssignOwner(state.staffDraft.id)) {
+        problems.set(role,'Можно назначить максимум двух владельцев.');
+      }
       if (field.value && (!/^\d+$/.test(field.value) || !Number.isSafeInteger(Number(field.value)) || Number(field.value) < 1)) {
         problems.set(field,'Введите Telegram ID цифрами.');
       } else if (field.value && administrators.some((member) => member.telegramId === Number(field.value) && member.id !== state.staffDraft.id)) {
