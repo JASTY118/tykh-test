@@ -353,6 +353,20 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
     }
     #tykh-gym [data-copy-status]:empty { display:none; }
     #tykh-gym .entrance-thumb { width:110px; }
+    #tykh-gym .staff-heading { display:flex; flex-wrap:wrap; align-items:center; gap:7px; }
+    #tykh-gym .staff-heading .badge { font-weight:600; }
+    #tykh-gym .staff-row { align-items:start; }
+    #tykh-gym .staff-row .quiet { overflow-wrap:anywhere; }
+    #tykh-gym .audit-filters { display:grid; grid-template-columns:minmax(0,1fr) minmax(136px,.65fr); gap:8px; }
+    #tykh-gym .audit-entry { display:grid; gap:6px; }
+    #tykh-gym .audit-entry time { white-space:nowrap; font-variant-numeric:tabular-nums; }
+    #tykh-gym .audit-entry ul { margin:0; padding-inline-start:18px; }
+    #tykh-gym .chrome .management { margin-inline-start:auto; min-height:38px; font-size:12px; }
+    #tykh-gym .chrome .management:not([hidden]) + .theme-toggle { margin-inline-start:0; }
+    @media (max-width:400px) {
+      #tykh-gym .audit-filters { grid-template-columns:1fr; }
+      #tykh-gym .chrome .management { padding-inline:8px; }
+    }
     #tykh-gym .map-link { margin-inline-start:auto; min-height:40px; font-size:12px; color:var(--accent); text-underline-offset:3px; }
     #tykh-gym .map-link:focus-visible { outline:2px solid var(--focus); outline-offset:3px; }
     #tykh-gym .project-credit {
@@ -520,6 +534,7 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
     <button class="pill" type="button" data-role="client" aria-pressed="true">Клиент</button>
     <button class="pill" type="button" data-role="admin" aria-pressed="false">Админ-панель</button>
     <button class="minor" type="button" data-action="admin-logout" hidden>Выйти из админки</button>
+    <button class="minor" type="button" data-action="admin-return" hidden>К клиенту</button>
   </div>
   <div class="product" data-client>
     <section class="surface chat" aria-label="Чат бота в Telegram">
@@ -554,6 +569,7 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
             <small>Почасовая аренда</small>
           </div>
         </div>
+        <button class="minor management" type="button" data-action="admin-enter" hidden>Управление</button>
         <button class="minor icon-button theme-toggle" type="button" data-action="theme" aria-label="Переключить тему"><i data-lucide="moon" aria-hidden="true"></i></button>
       </header>
       <div class="stage" data-view></div>
@@ -584,6 +600,8 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
         <button type="button" class="pill icon-label" data-admin-tab="halls"><i data-lucide="dumbbell" aria-hidden="true"></i>Залы</button>
         <button type="button" class="pill" data-admin-tab="news">Новости</button>
         <button type="button" class="pill icon-label" data-admin-tab="users"><i data-lucide="users" aria-hidden="true"></i>Пользователи</button>
+        <button type="button" class="pill icon-label" data-admin-tab="administrators"><i data-lucide="shield-check" aria-hidden="true"></i>Администраторы</button>
+        <button type="button" class="pill icon-label" data-admin-tab="audit"><i data-lucide="scroll-text" aria-hidden="true"></i>Журнал аудита</button>
       </nav>
       <div class="stack" data-admin-view></div>
     </div>
@@ -611,6 +629,34 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
   const standalone = document.documentElement.hasAttribute('data-tykh-telegram');
   const live = document.documentElement.hasAttribute('data-tykh-local');
   const adminPage = live && /^\/admin\/?$/.test(location.pathname);
+  const localAddress = ['localhost','127.0.0.1'].includes(location.hostname);
+  let adminMode = adminPage;
+  const adminRoles = {
+  "owner": {
+    "label": "Владелец",
+    "description": "Управляет залами, бронями, новостями и доступом команды. Видит журнал.",
+    "tabs": ["today", "schedule", "bookings", "halls", "news", "users", "administrators", "audit"]
+  },
+  "manager": {
+    "label": "Управляющий",
+    "description": "Управляет залами, бронями и новостями. Видит клиентов и журнал.",
+    "tabs": ["today", "schedule", "bookings", "halls", "news", "users", "audit"]
+  },
+  "operator": {
+    "label": "Оператор",
+    "description": "Видит клиентов и брони, закрывает слоты и отменяет записи.",
+    "tabs": ["today", "schedule", "bookings", "users"]
+  },
+  "editor": {
+    "label": "Редактор",
+    "description": "Редактирует карточки залов, их график и новости.",
+    "tabs": ["halls", "news"]
+  }
+};
+  const auditSections = {halls:'Залы',schedule:'Расписание',bookings:'Брони',news:'Новости',administrators:'Администраторы'};
+  const previewStaffKey = 'tykh:test-administration';
+  const administrators = live ? [] : [{id:1,name:'Владелец',telegramId:null,role:'owner'}];
+  const auditEntries = [];
   if (adminPage) {
     document.title = 'ТЫХ · Админ-панель';
     root.querySelector('.app .brand small').textContent = 'Управление залами';
@@ -667,7 +713,8 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
     adminHall:1, adminDate:baseDate, month:baseDate.slice(0,7), calendarOpen:false, adminBooking:null, draft:null, deleteHall:null,
     hold:null, confirmed:null, nextHall:3, nextBooking:105, nextNews:2, article:null, newsDraft:null,
     alert:'', emailDraft:'', nameDraft:'', userQuery:'', adminUser:null, theme:null, savingNews:false,
-    phoneDraft:'', challenge:'', visit:null, visitAccess:null, telegramReady:false, telegramPermission:null
+    phoneDraft:'', challenge:'', visit:null, visitAccess:null, telegramReady:false, telegramPermission:null,
+    administrator:administrators[0],canManage:false,staffDraft:null,removeStaff:null,auditSection:'',auditQuery:'',auditNext:null
   };
   const protectedScreens = new Set(['profile','history','personal','checkout','visit']);
   const hallScreens = new Set(['detail','gallery','slots','checkout']);
@@ -745,17 +792,29 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
   }
   async function syncServer() {
     const sequence = ++liveSync;
-    const response = await serverRequest(adminPage ? 'admin/state' : 'state');
+    const response = await serverRequest(adminMode ? 'admin/state' : 'state');
     if (sequence !== liveSync || !response) return false;
     const {data,tag} = response;
     liveTag = tag;
     liveReady = true;
-    liveAdmin = adminPage && data.admin;
+    liveAdmin = adminMode && data.admin;
+    if (adminMode && !adminPage && !liveAdmin) {
+      adminMode = false;
+      state.canManage = false;
+      liveTag = '';
+      return syncServer();
+    }
+    state.administrator = data.administrator;
+    administrators.splice(0,administrators.length,...(data.administrators ?? []));
+    if (adminMode && !adminRoles[data.administrator?.role]?.tabs.includes('audit')) {
+      auditEntries.length = 0;
+      state.auditNext = null;
+    }
     const wasAuthenticated = state.authenticated;
     state.authenticated = Boolean(data.account);
     state.telegramReady = data.telegramReady === true;
     state.role = liveAdmin ? 'admin' : 'client';
-    if (wasAuthenticated && !state.authenticated && protectedScreens.has(state.screen)) {
+    if (!adminMode && wasAuthenticated && !state.authenticated && protectedScreens.has(state.screen)) {
       state.visitAccess = null;
       state.loginTarget = state.screen;
       state.screen = 'login';
@@ -770,7 +829,7 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
     blocks.clear();
     for (const slot of data.blocks) blocks.add(blockKey(slot.hall,slot.date,slot.hour));
     news.splice(0,news.length,...data.news);
-    if (state.screen === 'payment' && state.hold) {
+    if (!adminMode && state.screen === 'payment' && state.hold) {
       const held = bookings.find((booking) => booking.id === state.hold.id);
       if (!held || held.status === 'cancelled') {
         state.hold = null;
@@ -1049,8 +1108,9 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
           (state.alert === 'Данные сохранены.' ? '<p class="success" role="status">Данные сохранены.</p>' : alertText());
       case 'logout': return head('Личный кабинет','Выйти из профиля?') + action('Выйти','logout','go') + action('Остаться','back');
       case 'admin-login': return head('Админ-панель','Вход администратора') + alertText() +
+        (!localAddress ? '<p class="quiet">Для входа откройте «ТЫХ» в Telegram с аккаунта администратора.</p>' :
         '<form class="stack" data-form="admin-login" novalidate><label class="field">Пароль<input name="password" type="password" autocomplete="current-password" required maxlength="200"></label>' +
-        '<button type="submit" class="go">Войти в админку</button></form>';
+        '<button type="submit" class="go">Войти в админку</button></form>');
       case 'news':
         return head('Объявления','Новости') + (publishedNews().map((item) =>
           '<article class="tile hall-card">' + (item.photos.length ? picture(item.photos[0],item.title) : '') +
@@ -1292,7 +1352,14 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
       }).join('');
   }
   function renderAdmin() {
-    root.querySelectorAll('[data-admin-tab]').forEach((tab) => tab.setAttribute('aria-pressed',tab.dataset.adminTab === state.admin));
+    const tabs = adminRoles[state.administrator.role].tabs;
+    if (!tabs.includes(state.admin)) state.admin = tabs[0];
+    root.querySelectorAll('[data-admin-tab]').forEach((tab) => {
+      tab.hidden = !tabs.includes(tab.dataset.adminTab);
+      tab.setAttribute('aria-pressed',tab.dataset.adminTab === state.admin);
+    });
+    const label = adminRoles[state.administrator.role].label;
+    root.querySelector('.admin .brand small').textContent = state.administrator.name === label ? label : state.administrator.name + ' · ' + label;
     const hall = hallOf(state.adminHall) || halls[0];
     if (hall) state.adminHall = hall.id;
     const empty = '<div class="tile">Добавьте зал в разделе «Залы».</div>';
@@ -1303,8 +1370,72 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
       case 'halls': return hallManager();
       case 'news': return newsManager();
       case 'users': return userDirectory();
+      case 'administrators': return administratorScreen();
+      case 'audit': return auditScreen();
     }
     return '';
+  }
+  function administratorScreen() {
+    const draft = state.staffDraft;
+    if (draft) {
+      const roles = Object.entries(adminRoles).filter(([id]) => id !== 'owner');
+      const roleField = draft.role === 'owner' ? '<p><span class="badge">Владелец</span></p>' :
+        '<label class="field">Роль<select name="role">' + roles.map(([id,role]) =>
+          '<option value="' + id + '"' + (id === draft.role ? ' selected' : '') + '>' + role.label + '</option>').join('') +
+        '</select></label>';
+      return head('Доступ команды',draft.id ? 'Редактировать администратора' : 'Добавить администратора') + alertText() +
+        '<form class="stack" data-form="administrator" novalidate><label class="field">Имя<input name="name" required maxlength="60" value="' +
+        safe(draft.name) + '"></label><label class="field">Telegram ID<input name="telegramId" inputmode="numeric" pattern="[0-9]{1,16}" maxlength="16" value="' +
+        safe(draft.telegramId) + '"' + (draft.role === 'owner' ? '' : ' required') + '></label>' + roleField +
+        '<p class="quiet" data-staff-permissions>' + adminRoles[draft.role].description + '</p><div class="row-actions">' +
+        '<button type="submit" class="go">Сохранить</button>' + action('Отмена','cancel-staff') + '</div></form>';
+    }
+    return head('Доступ команды','Администраторы','Добавляйте администраторов по Telegram ID и назначайте роли.') +
+      alertText() + action(iconLabel('plus','Добавить администратора'),'new-staff','go') +
+      administrators.map((member) => {
+        const role = adminRoles[member.role];
+        return '<article class="tile stack staff-row"><div class="line"><div class="staff-heading"><h3>' +
+          safe(member.name) + '</h3><span class="badge">' + role.label + '</span></div><small class="quiet">' +
+          (member.telegramId ? 'Telegram ID · ' + member.telegramId : 'Telegram ID ещё не задан') + '</small></div>' +
+          '<p class="quiet">' + role.description + '</p><div class="row-actions"><button type="button" class="minor" data-edit-staff="' +
+          member.id + '">' + iconLabel('pencil','Редактировать') + '</button>' + (member.role === 'owner' ? '' :
+            '<button type="button" class="minor danger" data-remove-staff="' + member.id + '">Отозвать доступ</button>') + '</div>' +
+          (state.removeStaff === member.id ? '<p>Отозвать доступ для ' + safe(member.name) + '?</p><div class="row-actions">' +
+            action('Подтвердить','confirm-remove-staff') + action('Отмена','cancel-remove-staff') + '</div>' : '') + '</article>';
+      }).join('');
+  }
+  function auditRows() {
+    const query = state.auditQuery.trim().toLocaleLowerCase('ru-RU');
+    const rows = auditEntries.filter((entry) => (!state.auditSection || entry.section === state.auditSection) &&
+      [entry.actor,entry.action,entry.target,...entry.details].join(' ').toLocaleLowerCase('ru-RU').includes(query));
+    return rows.map((entry) => '<article class="tile audit-entry"><div class="line"><span class="badge">' +
+      auditSections[entry.section] + '</span><time class="quiet" datetime="' + new Date(entry.at).toISOString() + '">' +
+      newsDate(entry.at) + ' · ' + newsTime(entry.at) + '</time></div><b>' + safe(entry.action) + '</b><p>' + safe(entry.target) +
+      '</p><small class="quiet">' + iconLabel('user-round',safe(entry.actor)) + '</small>' +
+      (entry.details.length ? '<ul class="quiet">' + entry.details.map((detail) => '<li>' + safe(detail) + '</li>').join('') + '</ul>' : '') +
+      '</article>').join('') || '<p class="quiet">' + (auditEntries.length ? 'Совпадений пока нет.' : 'Записей пока нет.') + '</p>';
+  }
+  function auditScreen() {
+    const sections = Object.entries(auditSections).map(([id,label]) =>
+      '<option value="' + id + '"' + (state.auditSection === id ? ' selected' : '') + '>' + label + '</option>').join('');
+    return head('История изменений','Журнал аудита','Действия администраторов по московскому времени.') +
+      '<div class="audit-filters"><label class="field">Поиск<input type="search" data-audit-query value="' +
+      safe(state.auditQuery) + '" placeholder="Имя, действие или объект"></label><label class="field">Раздел<select data-audit-section aria-label="Раздел">' +
+      '<option value="">Все разделы</option>' + sections + '</select></label></div>' +
+      '<div class="stack" data-audit-results>' + auditRows() + '</div>' +
+      (state.auditNext ? action('Ещё записи','audit-more') : '');
+  }
+  function refreshAuditRows() {
+    adminView.querySelector('[data-audit-results]').innerHTML = auditRows();
+    window.lucide?.createIcons({attrs:{width:16,height:16}});
+  }
+  async function fetchAudit(append = false) {
+    if (!live) return;
+    const {data} = await serverRequest('admin/audit' + (append ? '?before=' + state.auditNext : ''));
+    if (!append) auditEntries.length = 0;
+    auditEntries.push(...data.entries);
+    state.auditNext = data.next;
+    render();
   }
   function render() {
     const admin = state.role === 'admin';
@@ -1312,10 +1443,12 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
     root.querySelector('[data-admin]').hidden = !admin;
     root.querySelectorAll('[data-role]').forEach((control) => control.setAttribute('aria-pressed',control.dataset.role === state.role));
     root.querySelector('.chooser').hidden = live && !admin;
-    root.querySelector('[data-action="admin-logout"]').hidden = !adminPage || !admin;
+    root.querySelector('[data-action="admin-logout"]').hidden = !live || !admin;
+    root.querySelector('[data-action="admin-return"]').hidden = !live || !admin || adminPage;
+    root.querySelector('[data-action="admin-enter"]').hidden = !live || adminPage || !state.canManage || state.screen !== 'home';
     root.querySelector('.bar').hidden = adminPage;
     if (admin) {
-      adminView.innerHTML = (live && !['halls','news'].includes(state.admin) ? alertText() : '') + renderAdmin();
+      adminView.innerHTML = (live && !['halls','news','administrators'].includes(state.admin) ? alertText() : '') + renderAdmin();
     } else {
       view.innerHTML = '<div class="stack">' + customerScreen() + '</div>';
       root.querySelector('.back').hidden = adminPage || state.back.length === 0;
@@ -1341,7 +1474,8 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
       } else chatNews.textContent = '';
     }
     applyTheme();
-    const editor = state.admin === 'halls' ? state.draft : state.admin === 'news' ? state.newsDraft : null;
+    const editor = state.admin === 'halls' ? state.draft : state.admin === 'news' ? state.newsDraft :
+      state.admin === 'administrators' ? state.staffDraft : null;
     const page = admin ? 'admin:' + state.admin + ':' + (editor?.id ?? (editor ? 'new' : '')) :
       'client:' + state.screen + ':' + (state.screen === 'article' ? state.article : '');
     const changedPage = renderedPage !== undefined && renderedPage !== page;
@@ -1532,7 +1666,13 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
     else replace('otp');
   }
   async function endSession() {
-    await mutateServer(adminPage ? 'admin/logout' : 'logout',{});
+    const endpoint = adminMode ? 'admin/logout' : 'logout';
+    if (adminMode && !adminPage) {
+      adminMode = false;
+      state.canManage = false;
+      liveTag = '';
+    }
+    await mutateServer(endpoint,{});
     state.role = 'client';
     state.back = [];
     state.hold = null;
@@ -1541,6 +1681,104 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
     state.nameDraft = '';
     state.emailDraft = '';
     replace(adminPage ? 'admin-login' : 'home');
+  }
+  async function connectTelegramAdmin() {
+    const initData = telegramApp()?.initData;
+    if (!live || !initData) return;
+    try {
+      await serverRequest('admin/telegram',{initData});
+      state.canManage = true;
+      if (adminPage) {
+        liveTag = '';
+        await syncServer();
+      }
+      render();
+    } catch { /* A customer can continue without an administrator session. */ }
+  }
+  async function switchManagement(enter) {
+    adminMode = enter;
+    liveTag = '';
+    state.alert = '';
+    if (!enter) {
+      state.staffDraft = null;
+      state.removeStaff = null;
+    }
+    await syncServer();
+    render();
+    if (liveAdmin && state.admin === 'audit') await fetchAudit();
+  }
+  function savePreviewAdministration() {
+    if (!standalone || live) return;
+    try { localStorage.setItem(previewStaffKey,JSON.stringify({administrators,audit:auditEntries})); } catch {}
+  }
+  function previewAudit(section,actionName,target,details = []) {
+    if (live) return;
+    auditEntries.unshift({at:Date.now(),actor:state.administrator.name,section,action:actionName,target,details});
+    if (auditEntries.length > 250) auditEntries.length = 250;
+    savePreviewAdministration();
+  }
+  function restorePreviewAdministration() {
+    try {
+      const preview = JSON.parse(localStorage.getItem(previewStaffKey));
+      if (!Array.isArray(preview?.administrators) || !Array.isArray(preview.audit)) return;
+      const members = preview.administrators.filter((member) => Number.isSafeInteger(member?.id) && typeof member.name === 'string' &&
+        Object.hasOwn(adminRoles,member.role) && (member.telegramId === null || Number.isSafeInteger(member.telegramId)));
+      if (members[0]?.id !== 1 || members[0].role !== 'owner') return;
+      administrators.splice(0,administrators.length,...members);
+      state.administrator = administrators[0];
+      auditEntries.push(...preview.audit.slice(0,250).filter((entry) => entry && Number.isFinite(+new Date(entry.at)) &&
+        Object.hasOwn(auditSections,entry.section) && Array.isArray(entry.details)));
+    } catch {}
+  }
+  function finishStaffEdit() {
+    state.staffDraft = null;
+    state.alert = '';
+    render();
+  }
+  function saveStaff(data) {
+    const draft = state.staffDraft;
+    const member = {id:draft.id,name:String(data.get('name')).trim(),
+      telegramId:data.get('telegramId').trim() ? Number(data.get('telegramId')) : null,
+      role:draft.role === 'owner' ? 'owner' : data.get('role')};
+    if (live) {
+      void withServer(async () => {
+        await mutateServer('admin/administrator',member);
+        finishStaffEdit();
+      });
+      return;
+    }
+    if (member.id) {
+      const index = administrators.findIndex((admin) => admin.id === member.id);
+      const previous = administrators[index];
+      if (previous.name !== member.name || previous.role !== member.role || previous.telegramId !== member.telegramId) {
+        administrators[index] = member;
+        previewAudit('administrators','Изменил доступ',member.name,[adminRoles[previous.role].label + ' → ' + adminRoles[member.role].label]);
+        state.administrator = administrators[0];
+      }
+    } else {
+      member.id = administrators.at(-1).id + 1;
+      administrators.push(member);
+      previewAudit('administrators','Добавил администратора',member.name,[adminRoles[member.role].label]);
+    }
+    finishStaffEdit();
+  }
+  function revokeStaff() {
+    const id = state.removeStaff;
+    const member = administrators.find((item) => item.id === id && item.role !== 'owner');
+    if (!member) return;
+    if (live) {
+      void withServer(async () => {
+        await mutateServer('admin/administrator-remove',{id});
+        state.removeStaff = null;
+        state.alert = '';
+        render();
+      });
+      return;
+    }
+    administrators.splice(administrators.indexOf(member),1);
+    state.removeStaff = null;
+    previewAudit('administrators','Отозвал доступ',member.name,[adminRoles[member.role].label]);
+    render();
   }
   async function finishTestPayment(confirm, next) {
     const id = state.hold?.id;
@@ -1576,6 +1814,9 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
   }
   function handleAction(name, picker) {
     if (live) {
+      if (name === 'admin-enter') { void withServer(() => switchManagement(true)); return; }
+      if (name === 'admin-return') { void withServer(() => switchManagement(false)); return; }
+      if (name === 'audit-more') { void withServer(() => fetchAudit(true)); return; }
       if (name === 'server-refresh') { void withServer(refreshLive); return; }
       if (name === 'resend-code') { void withServer(sendLoginCode); return; }
       if (name === 'logout' || name === 'admin-logout') { void withServer(endSession); return; }
@@ -1594,6 +1835,13 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
       }
     }
     switch (name) {
+      case 'new-staff':
+        state.staffDraft = {name:'',telegramId:null,role:'operator'};
+        state.alert = '';
+        break;
+      case 'cancel-staff': finishStaffEdit(); return;
+      case 'cancel-remove-staff': state.removeStaff = null; break;
+      case 'confirm-remove-staff': revokeStaff(); return;
       case 'retry-visit': state.visitAccess = null; render(); void loadVisitCode(); return;
       case 'copy-visit': void copyVisitCode(); return;
       case 'telegram-permission':
@@ -1673,6 +1921,7 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
       case 'delete-hall': {
         const index = halls.findIndex((h) => h.id === state.deleteHall);
         if (index >= 0 && !bookings.some((b) => b.hall === state.deleteHall) && state.hold?.hall !== state.deleteHall) {
+          previewAudit('halls','Удалил зал',halls[index].name);
           halls.splice(index,1);
           updateHallSelection();
         }
@@ -1705,9 +1954,23 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
       state.admin = d.adminTab;
       state.calendarOpen = false;
       state.adminBooking = null;
+      state.removeStaff = null;
       state.alert = '';
       render();
       if (alreadyActive) scrollToStart();
+      if (live && d.adminTab === 'audit') void withServer(() => fetchAudit());
+      return;
+    }
+    if (d.editStaff) {
+      state.staffDraft = {...administrators.find((member) => member.id === Number(d.editStaff))};
+      state.alert = '';
+      render();
+      return;
+    }
+    if (d.removeStaff) {
+      state.removeStaff = Number(d.removeStaff);
+      state.alert = '';
+      render();
       return;
     }
     if (d.openHall) {
@@ -1773,8 +2036,13 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
         });
         return;
       }
-      if (blocks.has(key)) blocks.delete(key);
-      else if (!occupiedAt(state.adminHall,state.adminDate,hour) && !reservedAt(state.adminHall,state.adminDate,hour)) blocks.add(key);
+      const hallName = hallOf(state.adminHall).name;
+      const detail = [dateLabel(state.adminDate) + ' · ' + hours(hour)];
+      if (blocks.delete(key)) previewAudit('schedule','Открыл слот',hallName,detail);
+      else if (!occupiedAt(state.adminHall,state.adminDate,hour) && !reservedAt(state.adminHall,state.adminDate,hour)) {
+        blocks.add(key);
+        previewAudit('schedule','Закрыл слот',hallName,detail);
+      }
       normalizeSelection();
     } else if (d.edit) {
       beginHall(hallOf(Number(d.edit)));
@@ -1798,6 +2066,7 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
         return;
       }
       hall.visible = !hall.visible;
+      previewAudit('halls',hall.visible ? 'Показал зал' : 'Скрыл зал',hall.name);
       state.alert = '';
       updateHallSelection();
     } else if (d.delete) {
@@ -1824,7 +2093,10 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
   });
   root.addEventListener('input',(event) => {
     const field = event.target;
-    if (field.hasAttribute('data-user-search')) {
+    if (field.hasAttribute('data-audit-query')) {
+      state.auditQuery = field.value;
+      refreshAuditRows();
+    } else if (field.hasAttribute('data-user-search')) {
       updateUserSearch(field);
     } else if (field.closest('[data-form="checkout"]')) {
       if (field.name === 'email') state.emailDraft = field.value;
@@ -1847,6 +2119,15 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
   });
   root.addEventListener('change',async (event) => {
     const field = event.target;
+    if (field.hasAttribute('data-audit-section')) {
+      state.auditSection = field.value;
+      refreshAuditRows();
+      return;
+    }
+    if (field.form?.dataset.form === 'administrator' && field.name === 'role') {
+      field.form.querySelector('[data-staff-permissions]').textContent = adminRoles[field.value].description;
+      return;
+    }
     if (field.dataset.choice === 'admin-hall') {
       state.adminHall = Number(field.value);
       state.adminBooking = null;
@@ -1900,6 +2181,7 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
       case 'releaseDate': return 'Выберите дату выпуска.';
       case 'releaseTime': return 'Выберите время выпуска.';
       case 'address': return 'Укажите адрес зала.';
+      case 'telegramId': return 'Укажите Telegram ID.';
       case 'email': return 'Укажите email для чека.';
       case 'code': return 'Введите шестизначный код.';
       case 'base': return 'Укажите цену первого часа.';
@@ -1938,6 +2220,14 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
       if (!problems.has(date) && !problems.has(time)) {
         const release = publicationDate(date.value,time.value);
         if (!Number.isFinite(release) || release <= Date.now()) problems.set(time,'Укажите дату и время в будущем.');
+      }
+    }
+    if (kind === 'administrator') {
+      const field = form.elements.namedItem('telegramId');
+      if (field.value && (!/^\d+$/.test(field.value) || !Number.isSafeInteger(Number(field.value)) || Number(field.value) < 1)) {
+        problems.set(field,'Введите Telegram ID цифрами.');
+      } else if (field.value && administrators.some((member) => member.telegramId === Number(field.value) && member.id !== state.staffDraft.id)) {
+        problems.set(field,'Этот Telegram ID уже добавлен.');
       }
     }
     if (kind === 'hall') {
@@ -2006,8 +2296,17 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
       return;
     }
     const index = halls.findIndex((hall) => hall.id === edited.id);
-    if (index >= 0) halls[index] = edited;
-    else halls.push({...edited,id:state.nextHall++});
+    if (index >= 0) {
+      const previous = halls[index];
+      halls[index] = edited;
+      const details = [];
+      if (previous.base !== edited.base) details.push('Первый час · ' + rub(previous.base) + ' → ' + rub(edited.base));
+      if (previous.address !== edited.address) details.push('Адрес · ' + previous.address + ' → ' + edited.address);
+      previewAudit('halls','Изменил зал',edited.name,details);
+    } else {
+      halls.push({...edited,id:state.nextHall++});
+      previewAudit('halls','Добавил зал',edited.name);
+    }
     state.draft = null;
     state.alert = '';
     updateHallSelection();
@@ -2066,6 +2365,9 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
       const saved = {...item,id};
       if (index >= 0) news[index] = saved;
       else news.push(saved);
+      const release = item.publishedAt === null ? 'Черновик' :
+        'Выпуск · ' + newsDate(item.publishedAt) + ' · ' + newsTime(item.publishedAt);
+      previewAudit('news',index >= 0 ? 'Изменил новость' : 'Добавил новость',item.title,[release]);
       state.alert = '';
       updateNewsClock();
       return true;
@@ -2166,6 +2468,7 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
       return;
     }
     const data = new FormData(form);
+    if (kind === 'administrator') { saveStaff(data); return; }
     if (live && submitLive(kind,data)) return;
     switch (kind) {
       case 'hall': saveHall(data); return;
@@ -2212,6 +2515,7 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
         if (!b) return;
         b.status = 'cancelled';
         b.reason = String(data.get('reason')).trim();
+        previewAudit('bookings','Отменил бронь','№ ' + b.id + ' · ' + (b.hallName || hallOf(b.hall)?.name),[span(b)]);
         saveTestBookings();
         if (state.screen === 'confirmed' && state.confirmed === b.id) state.screen = 'history';
         break;
@@ -2236,7 +2540,10 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
       if (!live && ['client','admin'].includes(preferences?.role)) state.role = preferences.role;
       if (['light','dark'].includes(preferences?.theme)) state.theme = preferences.theme;
     } catch {}
-    if (!live) restoreTestBookings();
+    if (!live) {
+      restoreTestBookings();
+      restorePreviewAdministration();
+    }
   }
   function saveTestBookings() {
     if (!standalone || live) return;
@@ -2304,6 +2611,7 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
   if (standalone) document.addEventListener('DOMContentLoaded',playLaunch,{once:true});
   if (live) {
     void withServer(refreshLive);
+    document.addEventListener('DOMContentLoaded',connectTelegramAdmin,{once:true});
     setInterval(pollServer,5_000);
   } else if (standalone) void loadNews();
 })();
