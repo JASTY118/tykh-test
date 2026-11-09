@@ -1566,15 +1566,10 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
     const page = admin ? 'admin:' + state.admin + ':' + (editor?.id ?? (editor ? 'new' : '')) :
       'client:' + state.screen + ':' + (state.screen === 'article' ? state.article : '');
     const changedPage = renderedPage !== undefined && renderedPage !== page;
-    const enteringAdmin = admin && !renderedPage?.startsWith('admin:');
     if (changedPage) scrollToStart();
     if (!reducedMotion.matches) animateScreen(admin ? adminView : view,changedPage);
     renderedPage = page;
     renderedPhoto = state.photo;
-    if (enteringAdmin) {
-      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded',playAdminWelcome,{once:true});
-      else playAdminWelcome();
-    }
   }
 
   function animateScreen(panel,changedPage) {
@@ -2610,6 +2605,7 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
           state.nameDraft = '';
           state.emailDraft = '';
           render();
+          playAdminWelcome();
         });
         return true;
       case 'checkout': {
@@ -2816,16 +2812,25 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
   systemTheme.addEventListener('change',() => { if (state.theme === null) applyTheme(); });
   if (live || !openInitialVisit()) render();
   const startup = live ? withServer(refreshLive) : null;
-  if (standalone && !adminPage) {
+  if (standalone) {
+    const startsInAdmin = state.role === 'admin';
     document.addEventListener('DOMContentLoaded',async () => {
+      if (adminPage) {
+        await startup;
+        await withServer(async () => {
+          await connectTelegramAdmin();
+          playAdminWelcome();
+        });
+        return;
+      }
+      if (live) void connectTelegramAdmin();
       if (startup && !liveReady) await Promise.race([startup,new Promise((resolve) => setTimeout(resolve,550))]);
-      playClientWelcome();
+      if (startsInAdmin) playAdminWelcome();
+      else playClientWelcome();
     },{once:true});
   }
-  if (live) {
-    document.addEventListener('DOMContentLoaded',connectTelegramAdmin,{once:true});
-    setInterval(pollServer,5_000);
-  } else if (standalone) void loadNews();
+  if (live) setInterval(pollServer,5_000);
+  else if (standalone) void loadNews();
 })();
 
 </script>
